@@ -5,6 +5,11 @@ import UserModalV2 from "../modelsV2/UserAccount";
 import PostModel from "../modelsV2/Post";
 import User, { UserToInsert } from "../domain/User";
 import IPost from "../domain/Post";
+import bcrypt from "bcrypt";
+
+import Token from "../domain/Token";
+
+import jwt from "jsonwebtoken";
 
 /**
  * Get all the users.
@@ -67,7 +72,15 @@ export const getUserPosts = async (
 export const createUser = async (
   user: UserToInsert
 ): Promise<Success<User>> => {
-  const insertedUser = await UserModalV2.createUser(user);
+  const { password } = user;
+
+  const salt = await bcrypt.genSalt(10);
+  const passwordHash = await bcrypt.hash(password, salt);
+
+  const insertedUser = await UserModalV2.createUser({
+    ...user,
+    password: passwordHash,
+  });
 
   // const insertedUser = await UserModel.createUser(user);
   logger.info("User created successfully");
@@ -108,5 +121,38 @@ export const deleteUser = async (userId: number): Promise<Success<User>> => {
 
   return {
     message: "User deleted successfully",
+  };
+};
+
+/**
+ * Service to authenticate a user.
+ * @param {string} email
+ * @param {string} password
+ */
+export const login = async (
+  email: string,
+  password: string
+): Promise<Success<Token>> => {
+  const user = await UserModalV2.getUserByEmail(email);
+  if (!user) {
+    return {
+      message: "Invalid email or password",
+    };
+  }
+  const isPasswordMatch = await bcrypt.compare(password, user.password);
+  if (!isPasswordMatch) {
+    return {
+      message: "Password does not match",
+    };
+  }
+
+  const accessToken = jwt.sign(
+    { userId: user.id },
+    process.env.JWT_SECRET as string
+  );
+
+  return {
+    data: { accessToken },
+    message: "User logged in successfully",
   };
 };

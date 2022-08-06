@@ -29,6 +29,15 @@ class UserAccount {
     return user;
   }
 
+  public static async getUserByEmail(email: string): Promise<User> {
+    const user = await db(UserAccount.table)
+      .where({ email: email })
+      .select()
+      .first();
+
+    return user;
+  }
+
   public static async updateUser(user: User): Promise<User> {
     const [updatedUser] = await db(UserAccount.table)
       .where({ id: user.id })
