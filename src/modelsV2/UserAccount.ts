@@ -1,5 +1,5 @@
 import db from "../db/db";
-import User, { UserToInsert } from "../domain/User";
+import User, { RegisterUser } from "../domain/User";
 
 class UserAccount {
   public static table = "user_account";
@@ -10,7 +10,7 @@ class UserAccount {
     return users;
   }
 
-  public static async createUser(user: UserToInsert) {
+  public static async createUser(user: RegisterUser) {
     const newUser = await db(UserAccount.table).insert(user, [
       "id",
       "name",
@@ -29,7 +29,7 @@ class UserAccount {
     return user;
   }
 
-  public static async getUserByEmail(email: string): Promise<User> {
+  public static async getUserByEmail(email: string): Promise<RegisterUser> {
     const user = await db(UserAccount.table)
       .where({ email: email })
       .select()

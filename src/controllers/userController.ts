@@ -74,7 +74,7 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
  */
 export const updateUser = (req: Request, res: Response, next: NextFunction) => {
   const { userId } = req.params;
-  const { name, email, password } = req.body;
+  const { name, email } = req.body;
 
   if (!userId || !name || !email) {
     logger.error("Missing parameters userId or name or email");
@@ -85,7 +85,7 @@ export const updateUser = (req: Request, res: Response, next: NextFunction) => {
   }
 
   userService
-    .updateUser({ name, email, id: +userId, password })
+    .updateUser({ name, email, id: +userId })
     .then((data) => res.json(data))
     .catch((err) => next(err));
 };

@@ -3,13 +3,15 @@ import Success from "../domain/Success";
 // import * as UserModel from "../models/UserModel";
 import UserModalV2 from "../modelsV2/UserAccount";
 import PostModel from "../modelsV2/Post";
-import User, { UserToInsert } from "../domain/User";
+import User, { RegisterUser } from "../domain/User";
 import IPost from "../domain/Post";
 import bcrypt from "bcrypt";
 
 import Token from "../domain/Token";
 
 import jwt from "jsonwebtoken";
+import RefreshToken from "../modelsV2/RefreshToken";
+import { createAccessToken } from "../utils/common";
 
 /**
  * Get all the users.
@@ -70,7 +72,7 @@ export const getUserPosts = async (
  * @returns {Promise<Success<User>>}
  */
 export const createUser = async (
-  user: UserToInsert
+  user: RegisterUser
 ): Promise<Success<User>> => {
   const { password } = user;
 
@@ -84,6 +86,8 @@ export const createUser = async (
 
   // const insertedUser = await UserModel.createUser(user);
   logger.info("User created successfully");
+
+  // TO DO : Send mail to user
 
   return {
     data: insertedUser,
@@ -134,11 +138,13 @@ export const login = async (
   password: string
 ): Promise<Success<Token>> => {
   const user = await UserModalV2.getUserByEmail(email);
-  if (!user) {
+
+  if (!user || !user.id) {
     return {
       message: "Invalid email or password",
     };
   }
+
   const isPasswordMatch = await bcrypt.compare(password, user.password);
   if (!isPasswordMatch) {
     return {
@@ -146,13 +152,21 @@ export const login = async (
     };
   }
 
-  const accessToken = jwt.sign(
+  const accessToken = createAccessToken({ userId: user.id });
+
+  const refreshToken = jwt.sign(
     { userId: user.id },
-    process.env.JWT_SECRET as string
+    process.env.JWT_REFRESH_TOKEN as string
   );
 
+  await RefreshToken.createRefreshToken({
+    refreshToken,
+    userId: user.id,
+    expiresAt: new Date(Date.now() + 900000),
+  });
+
   return {
-    data: { accessToken },
-    message: "User logged in successfully",
+    data: { accessToken, refreshToken },
+    message: "Log in successful",
   };
 };

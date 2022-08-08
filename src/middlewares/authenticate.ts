@@ -1,22 +1,23 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Response } from "express";
 
 import jwt from "jsonwebtoken";
+import { AuthRequest, DataStoredInToken } from "../domain/User";
 import CustomError from "../misc/CustomError";
 
 const authenticate = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
   const accessToken = req.headers.authorization?.split(" ")[1];
 
   try {
-    const result = await jwt.verify(
+    const result = (await jwt.verify(
       accessToken as string,
       process.env.JWT_SECRET as string
-    );
+    )) as DataStoredInToken;
 
-    console.log(result);
+    req.authUser = result.userId;
 
     next();
   } catch (err) {
